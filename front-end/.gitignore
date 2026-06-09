@@ -1,4 +1,6 @@
 # Logs
+AGENT.md
+
 logs
 *.log
 npm-debug.log*
