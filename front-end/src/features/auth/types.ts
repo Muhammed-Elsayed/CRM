@@ -3,8 +3,16 @@ type SignInInput = {
   password: string
 }
 
-type SignInResult = {
-  ok: true
+type AuthUser = {
+  id: string
+  name: string
+  email: string
+  createdAt: string
 }
 
-export type { SignInInput, SignInResult }
+type SignInResult = {
+  user: AuthUser
+  token: string
+}
+
+export type { AuthUser, SignInInput, SignInResult }
