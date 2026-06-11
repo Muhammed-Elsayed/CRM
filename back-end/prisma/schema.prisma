@@ -6,6 +6,29 @@ datasource db {
   provider = "postgresql"
 }
 
+enum PipelineStageType {
+  OPEN
+  WON
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  EMAIL
+  CALL
+  SOCIAL_MEDIA
+  AFFILIATE
+  OTHER
+}
+
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -14,4 +37,93 @@ model User {
   createdAt    DateTime @default(now())
 
   @@map("users")
+}
+
+model Company {
+  id        String    @id @default(uuid())
+  name      String
+  website   String?
+  industry  String?
+  size      String?
+  country   String?
+  city      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  contacts  Contact[]
+  leads     Lead[]
+
+  @@index([name])
+  @@map("companies")
+}
+
+model Contact {
+  id        String   @id @default(uuid())
+  companyId String?
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  jobTitle  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  leads     Lead[]
+
+  @@index([companyId])
+  @@index([email])
+  @@map("contacts")
+}
+
+model Pipeline {
+  id        String          @id @default(uuid())
+  name      String          @unique
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  stages    PipelineStage[]
+
+  @@map("pipelines")
+}
+
+model PipelineStage {
+  id         String            @id @default(uuid())
+  pipelineId String
+  name       String
+  order      Int
+  type       PipelineStageType @default(OPEN)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  pipeline   Pipeline          @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  leads      Lead[]
+
+  @@unique([pipelineId, name])
+  @@unique([pipelineId, order])
+  @@index([pipelineId])
+  @@map("pipeline_stages")
+}
+
+model Lead {
+  id                String        @id @default(uuid())
+  title             String
+  description       String?
+  companyId         String?
+  contactId         String?
+  ownerId           String
+  stageId           String
+  value             Decimal       @default(0) @db.Decimal(12, 2)
+  source            LeadSource    @default(OTHER)
+  priority          LeadPriority  @default(MEDIUM)
+  expectedCloseDate DateTime?
+  closedAt          DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  company           Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contact           Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  stage             PipelineStage @relation(fields: [stageId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
+  @@index([contactId])
+  @@index([ownerId])
+  @@index([stageId])
+  @@index([priority])
+  @@map("leads")
 }

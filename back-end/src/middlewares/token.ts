@@ -10,63 +10,18 @@ type AuthTokenPayload = JwtPayload & {
     email: string
 }
 
-class JwtTokenService {
-    private readonly expiresIn: SignOptions['expiresIn'] = '1h'
+const tokenExpiresIn: SignOptions['expiresIn'] = '1h'
 
-    sign(payload: Pick<AuthTokenPayload, 'userId' | 'email'>): string {
-        if (!config.jwtSecret) {
-            throw WebError.InternalServerError('JWT_SECRET is required to sign authentication tokens')
-        }
-
-        return jwt.sign(payload, config.jwtSecret, { expiresIn: this.expiresIn })
+function generateToken(payload: Pick<AuthTokenPayload, 'userId' | 'email'>): string {
+    if (!config.jwtSecret) {
+        throw WebError.InternalServerError('JWT_SECRET is required to sign authentication tokens')
     }
 
-    verify(token: string): AuthTokenPayload {
-        if (!config.jwtSecret) {
-            throw WebError.InternalServerError('JWT_SECRET is required to verify authentication tokens')
-        }
-
-        try {
-            return jwt.verify(token, config.jwtSecret) as AuthTokenPayload
-        } catch {
-            throw new WebError(
-                401,
-                'InvalidTokenError',
-                'The provided token is invalid or expired, please login first',
-            )
-        }
-    }
+    return jwt.sign(payload, config.jwtSecret, { expiresIn: tokenExpiresIn })
 }
 
-class TokenMiddleware {
-    constructor(private readonly tokenService = new JwtTokenService()) {}
-
-    verifyToken = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const rawToken = this.extractToken(req)
-            const decodedToken = this.tokenService.verify(rawToken)
-
-            const user = await prisma.user.findUnique({
-                where: { id: decodedToken.userId },
-                select: { id: true, email: true },
-            })
-
-            if (!user) {
-                throw WebError.Forbidden('Forbidden, you are not authorized')
-            }
-
-            res.locals.authUser = {
-                id: user.id,
-                email: user.email,
-            }
-
-            next()
-        } catch (error) {
-            next(error)
-        }
-    }
-
-    private extractToken(req: Request): string {
+async function verifyToken(req: Request, res: Response, next: NextFunction) {
+    try {
         const authorization = req.headers.authorization
 
         if (!authorization) {
@@ -79,15 +34,41 @@ class TokenMiddleware {
             throw new WebError(401, 'InvalidTokenError', 'Authentication token must use the Bearer scheme')
         }
 
-        return token
+        if (!config.jwtSecret) {
+            throw WebError.InternalServerError('JWT_SECRET is required to verify authentication tokens')
+        }
+
+        const decodedToken = jwt.verify(token, config.jwtSecret) as AuthTokenPayload
+
+        const user = await prisma.user.findUnique({
+            where: { id: decodedToken.userId },
+            select: { id: true, email: true },
+        })
+
+        if (!user) {
+            throw WebError.Forbidden('Forbidden, you are not authorized')
+        }
+
+        res.locals.authUser = {
+            id: user.id,
+            email: user.email,
+        }
+
+        next()
+    } catch (error) {
+        if (error instanceof WebError) {
+            return next(error)
+        }
+
+        next(
+            new WebError(
+                401,
+                'InvalidTokenError',
+                'The provided token is invalid or expired, please login first',
+            ),
+        )
     }
 }
 
-const jwtTokenService = new JwtTokenService()
-const tokenMiddleware = new TokenMiddleware(jwtTokenService)
-
-const generateToken = (payload: Pick<AuthTokenPayload, 'userId' | 'email'>) => jwtTokenService.sign(payload)
-const verifyToken = tokenMiddleware.verifyToken
-
-export { generateToken, JwtTokenService, TokenMiddleware, verifyToken }
+export { generateToken, verifyToken }
 export type { AuthTokenPayload }

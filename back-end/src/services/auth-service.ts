@@ -1,13 +1,11 @@
 import { publicUserSelect } from '../models/user-model.js'
-import { JwtTokenService } from '../middlewares/token.js'
+import { generateToken } from '../middlewares/token.js'
 import { prisma } from '../db/config.js'
 import { verifyHash } from '../utilities/hash-password.js'
 import { WebError } from '../utilities/web-errors.js'
 import type { LoginRequestBody } from '../schemas/auth-schema.js'
 
 class AuthService {
-    constructor(private readonly tokenService = new JwtTokenService()) {}
-
     async login(credentials: LoginRequestBody) {
         const user = await prisma.user.findUnique({
             where: { email: credentials.email },
@@ -28,7 +26,7 @@ class AuthService {
         }
 
         const { passwordHash, ...publicUser } = user
-        const token = this.tokenService.sign({
+        const token = generateToken({
             userId: publicUser.id,
             email: publicUser.email,
         })
