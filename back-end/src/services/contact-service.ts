@@ -69,6 +69,15 @@ class ContactService {
         })
     }
 
+    async delete(id: string) {
+        await this.getById(id)
+
+        return prisma.contact.delete({
+            where: { id },
+            select: contactSelect,
+        })
+    }
+
     private async ensureCompanyExists(companyId: string) {
         const company = await prisma.company.findUnique({
             where: { id: companyId },

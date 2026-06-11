@@ -148,6 +148,18 @@ class LeadService {
         return leadWithOwner
     }
 
+    async delete(id: string): Promise<LeadWithOwner> {
+        await this.getById(id)
+
+        const lead = await prisma.lead.delete({
+            where: { id },
+            select: leadSelect,
+        })
+
+        const [leadWithOwner] = await this.attachOwners([lead])
+        return leadWithOwner
+    }
+
     private async ensureCompanyAndContactExist(companyId?: string, contactId?: string) {
         if (companyId) {
             const company = await prisma.company.findUnique({

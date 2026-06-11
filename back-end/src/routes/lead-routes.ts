@@ -17,6 +17,7 @@ class LeadRoutes {
         this.router.get('/:id', this.leadController.getById)
         this.router.patch('/:id', this.leadController.update)
         this.router.patch('/:id/stage', this.leadController.moveStage)
+        this.router.delete('/:id', this.leadController.delete)
     }
 }
 

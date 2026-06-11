@@ -16,6 +16,7 @@ class CompanyRoutes {
         this.router.post('/', this.companyController.create)
         this.router.get('/:id', this.companyController.getById)
         this.router.patch('/:id', this.companyController.update)
+        this.router.delete('/:id', this.companyController.delete)
     }
 }
 

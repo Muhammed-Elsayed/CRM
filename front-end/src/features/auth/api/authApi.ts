@@ -1,8 +1,8 @@
 import { httpClient } from '@/shared/api/httpClient'
 import { normalizeApiError } from '@/shared/api/normalizeApiError'
+import { persistAuthToken } from '@/shared/auth/authTokenStorage'
 
 import { signInResponseSchema } from '../schemas/authApiSchemas'
-import { persistAuthToken } from '../storage/authTokenStorage'
 import type { SignInInput, SignInResult } from '../types'
 
 const signInErrorMessages = {

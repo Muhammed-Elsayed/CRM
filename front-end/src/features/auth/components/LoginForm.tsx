@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { CardContent, CardFooter } from '@/components/ui/card'
@@ -12,6 +13,7 @@ import type { SignInInput } from '../types'
 
 function LoginForm() {
   const [successMessage, setSuccessMessage] = useState('')
+  const navigate = useNavigate()
   const signInMutation = useSignIn()
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -27,6 +29,7 @@ function LoginForm() {
     signInMutation.mutate(input, {
       onSuccess: (result) => {
         setSuccessMessage(`Welcome back, ${result.user.name}.`)
+        navigate('/dashboard', { replace: true })
       },
     })
   }

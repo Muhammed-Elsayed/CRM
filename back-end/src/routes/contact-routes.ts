@@ -16,6 +16,7 @@ class ContactRoutes {
         this.router.post('/', this.contactController.create)
         this.router.get('/:id', this.contactController.getById)
         this.router.patch('/:id', this.contactController.update)
+        this.router.delete('/:id', this.contactController.delete)
     }
 }
 

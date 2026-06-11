@@ -37,6 +37,13 @@ class CompanyController {
 
         responseHandler(res, 200, 'Company updated successfully', company)
     })
+
+    delete = asyncHandler(async (req: Request, res: Response) => {
+        const { id } = parseZodSchema(SalesPipelineSchemas.idParams, req.params)
+        const company = await this.companyService.delete(id)
+
+        responseHandler(res, 200, 'Company deleted successfully', company)
+    })
 }
 
 export { CompanyController }

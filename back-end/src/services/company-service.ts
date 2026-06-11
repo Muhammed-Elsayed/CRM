@@ -61,6 +61,15 @@ class CompanyService {
         })
     }
 
+    async delete(id: string) {
+        await this.getById(id)
+
+        return prisma.company.delete({
+            where: { id },
+            select: companySelect,
+        })
+    }
+
     private buildWhere(query: CompanyListQuery): Prisma.CompanyWhereInput {
         if (!query.search) {
             return {}

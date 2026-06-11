@@ -47,6 +47,13 @@ class LeadController {
         responseHandler(res, 200, 'Lead moved successfully', lead)
     })
 
+    delete = asyncHandler(async (req: Request, res: Response) => {
+        const { id } = parseZodSchema(SalesPipelineSchemas.idParams, req.params)
+        const lead = await this.leadService.delete(id)
+
+        responseHandler(res, 200, 'Lead deleted successfully', lead)
+    })
+
     private getAuthUserId(res: Response) {
         const authUserId = res.locals.authUser?.id
 

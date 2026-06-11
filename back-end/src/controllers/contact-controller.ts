@@ -37,6 +37,13 @@ class ContactController {
 
         responseHandler(res, 200, 'Contact updated successfully', contact)
     })
+
+    delete = asyncHandler(async (req: Request, res: Response) => {
+        const { id } = parseZodSchema(SalesPipelineSchemas.idParams, req.params)
+        const contact = await this.contactService.delete(id)
+
+        responseHandler(res, 200, 'Contact deleted successfully', contact)
+    })
 }
 
 export { ContactController }
