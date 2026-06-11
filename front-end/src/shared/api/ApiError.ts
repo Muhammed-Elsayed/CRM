@@ -1,11 +1,11 @@
-class AuthApiError extends Error {
+class ApiError extends Error {
   readonly statusCode?: number
 
   constructor(message: string, statusCode?: number) {
     super(message)
-    this.name = 'AuthApiError'
+    this.name = 'ApiError'
     this.statusCode = statusCode
   }
 }
 
-export { AuthApiError }
+export { ApiError }

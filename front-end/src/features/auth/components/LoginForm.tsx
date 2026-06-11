@@ -1,19 +1,20 @@
 import { useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import type { FormEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { CardContent, CardFooter } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 
+import { LoginFeedback } from './LoginFeedback'
+import { LoginPasswordField } from './LoginPasswordField'
+import { LoginTextField } from './LoginTextField'
 import { useSignIn } from '../hooks/useSignIn'
 import type { SignInInput } from '../types'
 
 function LoginForm() {
-  const [showPassword, setShowPassword] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const signInMutation = useSignIn()
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const formData = new FormData(event.currentTarget)
@@ -39,67 +40,27 @@ function LoginForm() {
     <form onSubmit={handleSubmit} className="contents">
       <CardContent className="px-4 pt-[18px] pb-8">
         <div className="grid gap-[18px]">
-          <label
-            className="grid gap-[7px] text-sm leading-tight text-[#26344d]"
-            htmlFor="email"
-          >
-            <span>Email Address *</span>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="admin@example.com"
-              disabled={signInMutation.isPending}
-              aria-invalid={signInMutation.isError}
-              className="h-[39px] rounded-[5px] border-[#d8e0ea] bg-white pr-2.5 text-sm text-[#172033] focus-visible:border-teal-500 focus-visible:ring-teal-500/20"
-            />
-          </label>
+          <LoginTextField
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            label="Email Address *"
+            placeholder="admin@example.com"
+            disabled={signInMutation.isPending}
+            isInvalid={signInMutation.isError}
+          />
 
-          <label
-            className="grid gap-[7px] text-sm leading-tight text-[#26344d]"
-            htmlFor="password"
-          >
-            <span>Password *</span>
-            <div className="relative">
-              <Input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="Password"
-                disabled={signInMutation.isPending}
-                aria-invalid={signInMutation.isError}
-                className="h-[39px] rounded-[5px] border-[#d8e0ea] bg-white pr-10 text-sm text-[#172033] focus-visible:border-teal-500 focus-visible:ring-teal-500/20"
-              />
-              <Button
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute top-1/2 right-1 size-8 -translate-y-1/2 text-[#314158] hover:bg-[#eef7f8] hover:text-teal-700"
-                disabled={signInMutation.isPending}
-                onClick={() => setShowPassword((visible) => !visible)}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                {showPassword ? <EyeOff /> : <Eye />}
-              </Button>
-            </div>
-          </label>
+          <LoginPasswordField
+            disabled={signInMutation.isPending}
+            isInvalid={signInMutation.isError}
+          />
 
-          {signInMutation.isError ? (
-            <p
-              className="rounded-[5px] border border-red-200 bg-red-50 px-3 py-2 text-sm leading-snug text-red-700"
-              role="alert"
-            >
-              {errorMessage}
-            </p>
-          ) : null}
-
-          {successMessage ? (
-            <p className="rounded-[5px] border border-teal-200 bg-teal-50 px-3 py-2 text-sm leading-snug text-teal-700">
-              {successMessage}
-            </p>
-          ) : null}
+          <LoginFeedback
+            errorMessage={errorMessage}
+            isError={signInMutation.isError}
+            successMessage={successMessage}
+          />
         </div>
       </CardContent>
 

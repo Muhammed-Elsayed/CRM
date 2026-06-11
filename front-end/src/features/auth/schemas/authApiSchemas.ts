@@ -17,10 +17,4 @@ const signInResponseSchema = z.object({
   timestamp: z.string(),
 })
 
-const apiErrorResponseSchema = z.object({
-  statusCode: z.number().optional(),
-  statusText: z.string().optional(),
-  message: z.string().optional(),
-})
-
-export { apiErrorResponseSchema, authUserSchema, signInResponseSchema }
+export { authUserSchema, signInResponseSchema }

@@ -3,7 +3,7 @@ import axios from 'axios'
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
 
-const authHttpClient = axios.create({
+const httpClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -11,4 +11,4 @@ const authHttpClient = axios.create({
   timeout: 10000,
 })
 
-export { authHttpClient }
+export { httpClient }
