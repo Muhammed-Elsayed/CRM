@@ -1,17 +1,27 @@
 import type { NextFunction, Request, Response } from 'express'
 
+import { config } from '../config/index.js'
 import { WebError } from '../utilities/web-errors.js'
 
-export const errorHandler = (err: WebError, req: Request, res: Response, next: NextFunction): void => {
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = req.app.get("env") === "development" ? err : {};
+export const errorHandler = (err: unknown, req: Request, res: Response, next: NextFunction): void => {
+    const isWebError = err instanceof WebError
+    const statusCode = isWebError ? err.statusCode : 500
+    const statusText = isWebError ? err.statusText : 'Internal Server Error'
+    const message =
+        statusCode >= 500 && config.isProduction
+            ? 'Internal Server Error'
+            : isWebError
+              ? err.message
+              : 'An unexpected error occurred on the server.'
 
-    res.status(err.statusCode).json(
+    res.locals.message = message;
+    res.locals.error = config.isProduction ? {} : err;
+
+    res.status(statusCode).json(
         {
-            statusCode: err.statusCode || 500,
-            statusText: err.statusText || 'Error',
-            message: err.message || 'Internal Server Error'
+            statusCode,
+            statusText,
+            message
         }
     );
 };

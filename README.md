@@ -87,7 +87,9 @@ Backend:
 - `npm run build` - compile TypeScript
 - `npm run start` - run the compiled API
 - `npm run prisma:migrate` - run Prisma migrations
+- `npm run prisma:migrate:deploy` - apply production migrations
 - `npm run prisma:seed` - seed default pipeline stages
+- `npm run admin:create` - create the first production user from admin env vars
 
 Frontend:
 
@@ -107,3 +109,5 @@ All business routes are under `/api`:
 - `/pipelines`
 
 Companies, contacts, leads, and pipelines require a bearer token.
+
+For EC2/RDS Docker deployment, see `back-end/PRODUCTION.md`.
