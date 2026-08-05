@@ -30,6 +30,11 @@ const trustProxyFromEnv = z.preprocess((value) => {
   return Number.isInteger(numericValue) && numericValue >= 0 ? numericValue : value
 }, z.union([z.boolean(), z.number().int().min(0)]))
 
+const corsOriginValue = z.union([
+  z.literal('*'),
+  z.string().url().transform((origin) => new URL(origin).origin),
+])
+
 const commaSeparatedOrigins = z.preprocess((value) => {
   if (typeof value !== 'string') {
     return value
@@ -39,9 +44,9 @@ const commaSeparatedOrigins = z.preprocess((value) => {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean)
-}, z.array(z.string().url().transform((origin) => new URL(origin).origin)).min(1))
+}, z.array(corsOriginValue).min(1))
 
-const origin = z.string().url().transform((value) => new URL(value).origin)
+const origin = corsOriginValue
 
 const envSchema = z
   .object({
@@ -74,12 +79,14 @@ const envSchema = z
 
 const parsedEnv = envSchema.parse(process.env)
 const corsOrigins = Array.from(new Set(parsedEnv.CORS_ORIGINS ?? [parsedEnv.CORS_ORIGIN as string]))
+const allowAllCorsOrigins = corsOrigins.includes('*')
 
 const config = {
   nodeEnv: parsedEnv.NODE_ENV,
   isProduction: parsedEnv.NODE_ENV === 'production',
   port: parsedEnv.PORT,
   corsOrigins,
+  allowAllCorsOrigins,
   databaseUrl: parsedEnv.DATABASE_URL,
   jwtSecret: parsedEnv.JWT_SECRET,
   trustProxy: parsedEnv.TRUST_PROXY ?? (parsedEnv.NODE_ENV === 'production' ? 1 : false),

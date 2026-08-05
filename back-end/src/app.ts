@@ -15,7 +15,7 @@ app.disable('x-powered-by')
 app.set('trust proxy', config.trustProxy)
 
 const corsOrigin: CorsOptions['origin'] = (origin, callback) => {
-  if (!origin || config.corsOrigins.includes(origin)) {
+  if (!origin || config.allowAllCorsOrigins || config.corsOrigins.includes(origin)) {
     callback(null, true)
     return
   }
