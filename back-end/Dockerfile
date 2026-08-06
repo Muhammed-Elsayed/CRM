@@ -1,28 +1,35 @@
-# syntax=docker/dockerfile:1
+FROM node:22-bookworm-slim AS build
 
-FROM node:22-bookworm-slim AS base
 WORKDIR /app
 
-FROM base AS deps
-ENV NODE_ENV=development
-COPY package*.json prisma.config.ts ./
-COPY prisma ./prisma
-RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/clientflow_crm?schema=public" npm ci
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
-FROM deps AS build
-COPY tsconfig.json ./
-COPY src ./src
-RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/clientflow_crm?schema=public" npm run prisma:generate
-RUN npm run build
+COPY package*.json ./
+RUN npm ci
 
-FROM base AS production
-ENV NODE_ENV=production
-COPY package*.json prisma.config.ts ./
-COPY prisma ./prisma
-RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/clientflow_crm?schema=public" npm ci --omit=dev \
-  && DATABASE_URL="postgresql://postgres:postgres@localhost:5432/clientflow_crm?schema=public" npm run prisma:generate \
+COPY . .
+
+RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/clientflow_crm?schema=public" npm run prisma:generate \
+  && npm run build \
+  && npm prune --omit=dev \
   && npm cache clean --force
+
+FROM node:22-bookworm-slim AS production
+
+WORKDIR /app
+
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
-USER node
+COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/prisma.config.ts ./prisma.config.ts
+
 EXPOSE 4000
-CMD ["node", "dist/server.js"]
+
+CMD ["npm", "start"]
