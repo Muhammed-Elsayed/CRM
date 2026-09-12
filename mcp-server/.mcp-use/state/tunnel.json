@@ -1,0 +1,6 @@
+{
+  "subdomain": "parental-turquoise",
+  "token": "IoAygJzcMMU6Aich17govy6tUjrSKpqGfHvscEf0Qjo",
+  "connect_url": "wss://api.tunnel.mcp-use.run/connect/parental-turquoise",
+  "public_url": "https://parental-turquoise.tunnel.mcp-use.run"
+}

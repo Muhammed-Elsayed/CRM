@@ -46,7 +46,11 @@ app.use(
 )
 app.use(express.json({ limit: '1mb' }))
 app.use(cookieParser())
+app.use('/api/auth', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next() })
 app.use('/api', apiRateLimiter)
+app.use('/api/auth', rateLimit({
+  windowMs: 15 * 60 * 1000, limit: 120, standardHeaders: true, legacyHeaders: false,
+}))
 app.use('/api/auth/login', loginRateLimiter)
 
 app.get('/api/health', (_request, response) => {

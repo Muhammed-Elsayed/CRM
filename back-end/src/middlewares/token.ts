@@ -1,72 +1,48 @@
 import type { NextFunction, Request, Response } from 'express'
-import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken'
+import jwt from 'jsonwebtoken'
+import { z } from 'zod'
 
 import { config } from '../config/index.js'
 import { prisma } from '../db/config.js'
 import { WebError } from '../utilities/web-errors.js'
 
-type AuthTokenPayload = JwtPayload & {
-    userId: string
-    email: string
-}
+const accessClaims = z.object({ sub: z.uuid(), exp: z.number().int(), iat: z.number().int() })
+type AuthTokenPayload = z.infer<typeof accessClaims>
 
-const tokenExpiresIn: SignOptions['expiresIn'] = '1h'
-
-function generateToken(payload: Pick<AuthTokenPayload, 'userId' | 'email'>): string {
-    if (!config.jwtSecret) {
-        throw WebError.InternalServerError('JWT_SECRET is required to sign authentication tokens')
-    }
-
-    return jwt.sign(payload, config.jwtSecret, { expiresIn: tokenExpiresIn })
+function generateToken(userId: string): string {
+    return jwt.sign({}, config.jwtSecret, {
+        algorithm: 'HS256', subject: userId, expiresIn: config.accessTokenSeconds,
+    })
 }
 
 async function verifyToken(req: Request, res: Response, next: NextFunction) {
+    const authorization = req.headers.authorization
+    if (!authorization) {
+        return next(new WebError(401, 'MissingTokenError', 'Authentication is required'))
+    }
+    const match = /^Bearer ([^\s]+)$/i.exec(authorization)
+    if (!match) {
+        return next(new WebError(401, 'InvalidTokenError', 'Invalid authentication token'))
+    }
+
+    let claims: AuthTokenPayload
     try {
-        const authorization = req.headers.authorization
+        claims = accessClaims.parse(jwt.verify(match[1]!, config.jwtSecret, { algorithms: ['HS256'] }))
+    } catch (error) {
+        return next(new WebError(401,
+            error instanceof jwt.TokenExpiredError ? 'AccessTokenExpired' : 'InvalidTokenError',
+            'Authentication token is invalid or expired'))
+    }
 
-        if (!authorization) {
-            throw new WebError(401, 'MissingTokenError', 'Missing authentication token, please login first')
-        }
-
-        const [scheme, token] = authorization.split(' ')
-
-        if (scheme !== 'Bearer' || !token) {
-            throw new WebError(401, 'InvalidTokenError', 'Authentication token must use the Bearer scheme')
-        }
-
-        if (!config.jwtSecret) {
-            throw WebError.InternalServerError('JWT_SECRET is required to verify authentication tokens')
-        }
-
-        const decodedToken = jwt.verify(token, config.jwtSecret) as AuthTokenPayload
-
+    try {
         const user = await prisma.user.findUnique({
-            where: { id: decodedToken.userId },
-            select: { id: true, email: true },
+            where: { id: claims.sub }, select: { id: true, email: true },
         })
-
-        if (!user) {
-            throw WebError.Forbidden('Forbidden, you are not authorized')
-        }
-
-        res.locals.authUser = {
-            id: user.id,
-            email: user.email,
-        }
-
+        if (!user) return next(WebError.UnAuthorized('Authentication is required'))
+        res.locals.authUser = user
         next()
     } catch (error) {
-        if (error instanceof WebError) {
-            return next(error)
-        }
-
-        next(
-            new WebError(
-                401,
-                'InvalidTokenError',
-                'The provided token is invalid or expired, please login first',
-            ),
-        )
+        next(error)
     }
 }
 

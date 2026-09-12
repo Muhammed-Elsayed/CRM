@@ -16,7 +16,9 @@
     "prisma:seed": "prisma db seed",
     "db:seed": "node dist/scripts/seed-default-pipeline.js",
     "db:deploy": "npm run prisma:migrate:deploy && npm run db:seed",
-    "admin:create": "node dist/scripts/create-admin.js"
+    "admin:create": "node dist/scripts/create-admin.js",
+    "auth:cleanup": "node dist/scripts/cleanup-auth-sessions.js",
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "keywords": [],
   "author": "",

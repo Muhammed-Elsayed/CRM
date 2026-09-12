@@ -22,6 +22,13 @@ const successResponse = (description: string, schemaRef?: string) => ({
 })
 
 const protectedRoute = [{ bearerAuth: [] }]
+const authHeader = [{ name: 'X-CRM-Auth', in: 'header', required: true,
+    schema: { type: 'string', const: '1' }, description: 'Required CSRF defense on all authentication requests.' }]
+const cookieHeaders = {
+    'Set-Cookie': { schema: { type: 'string' }, description: 'HttpOnly crm_refresh cookie; Path=/api/auth, SameSite=Lax, Secure unless insecure HTTP is explicitly enabled.' },
+    'Cache-Control': { schema: { type: 'string', const: 'no-store' } },
+}
+
 
 const openApiDocument = {
     openapi: '3.1.0',
@@ -48,6 +55,8 @@ const openApiDocument = {
             post: {
                 tags: ['Auth'],
                 summary: 'Login',
+                description: 'Issues a 15-minute access JWT and a rotating refresh cookie with a seven-day absolute session lifetime. Browser origins must be allowlisted.',
+                parameters: authHeader,
                 requestBody: {
                     required: true,
                     content: {
@@ -57,9 +66,34 @@ const openApiDocument = {
                     },
                 },
                 responses: {
-                    200: successResponse('Login successful', '#/components/schemas/LoginResponseData'),
+                    200: { ...successResponse('Login successful', '#/components/schemas/LoginResponseData'), headers: cookieHeaders },
                     400: { $ref: '#/components/responses/Error' },
                     401: { $ref: '#/components/responses/Error' },
+                },
+            },
+        },
+        '/auth/refresh': {
+            post: {
+                tags: ['Auth'], summary: 'Rotate refresh token and renew access',
+                description: 'Consumes the crm_refresh cookie once and replaces it. Reusing a consumed token revokes its login session. No access token is required.',
+                parameters: authHeader, security: [{ refreshCookie: [] }],
+                responses: {
+                    200: { ...successResponse('Session refreshed', '#/components/schemas/LoginResponseData'), headers: cookieHeaders },
+                    401: { $ref: '#/components/responses/Error' },
+                    403: { $ref: '#/components/responses/Error' },
+                    429: { $ref: '#/components/responses/Error' },
+                },
+            },
+        },
+        '/auth/logout': {
+            post: {
+                tags: ['Auth'], summary: 'Revoke current login session',
+                description: 'Revokes the session identified by crm_refresh and clears the cookie. Missing or invalid cookies still succeed. Issued access tokens remain valid until expiry.',
+                parameters: authHeader,
+                responses: {
+                    200: { ...successResponse('Signed out'), headers: cookieHeaders },
+                    403: { $ref: '#/components/responses/Error' },
+                    429: { $ref: '#/components/responses/Error' },
                 },
             },
         },
@@ -340,6 +374,7 @@ const openApiDocument = {
     },
     components: {
         securitySchemes: {
+            refreshCookie: { type: 'apiKey', in: 'cookie', name: 'crm_refresh' },
             bearerAuth: {
                 type: 'http',
                 scheme: 'bearer',

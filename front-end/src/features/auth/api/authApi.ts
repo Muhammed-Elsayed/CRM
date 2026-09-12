@@ -1,8 +1,6 @@
-import { httpClient } from '@/shared/api/httpClient'
+import { loginSession } from '@/shared/auth/authSession'
 import { normalizeApiError } from '@/shared/api/normalizeApiError'
-import { persistAuthToken } from '@/shared/auth/authTokenStorage'
 
-import { signInResponseSchema } from '../schemas/authApiSchemas'
 import type { SignInInput, SignInResult } from '../types'
 
 const signInErrorMessages = {
@@ -14,13 +12,7 @@ const signInErrorMessages = {
 
 async function signIn(input: SignInInput): Promise<SignInResult> {
   try {
-    const response = await httpClient.post('/api/auth/login', input)
-    const parsedResponse = signInResponseSchema.parse(response.data)
-    const result = parsedResponse.data
-
-    persistAuthToken(result.token)
-
-    return result
+    return await loginSession(input)
   } catch (error) {
     throw normalizeApiError(error, signInErrorMessages)
   }

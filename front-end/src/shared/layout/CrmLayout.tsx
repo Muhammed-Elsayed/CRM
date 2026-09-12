@@ -8,10 +8,11 @@ import {
   SquareKanban,
   UsersRound,
 } from 'lucide-react'
+import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
-import { clearStoredAuthToken } from '@/shared/auth/authTokenStorage'
+import { logoutSession } from '@/shared/auth/authSession'
 import { ClientFlowLogo } from '@/shared/brand/ClientFlowLogo'
 
 const navItems = [
@@ -24,9 +25,20 @@ const navItems = [
 function CrmLayout() {
   const navigate = useNavigate()
 
-  function handleSignOut() {
-    clearStoredAuthToken()
-    navigate('/login', { replace: true })
+  const [signingOut, setSigningOut] = useState(false)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    setLogoutError(null)
+    try {
+      await logoutSession()
+      navigate('/login', { replace: true })
+    } catch {
+      setLogoutError('Could not confirm sign-out. Please try again.')
+    } finally {
+      setSigningOut(false)
+    }
   }
 
   return (
@@ -66,6 +78,7 @@ function CrmLayout() {
             variant="ghost"
             size="icon"
             onClick={handleSignOut}
+            disabled={signingOut}
             className="rounded-full text-[#172033]"
             title="Sign out"
             aria-label="Sign out"
@@ -79,6 +92,7 @@ function CrmLayout() {
         </div>
       </header>
 
+      {logoutError && <p role="alert" className="p-3 text-red-700">{logoutError}</p>}
       <div className="grid min-h-[calc(100svh-66px)] grid-cols-1 md:grid-cols-[72px_minmax(0,1fr)]">
         <aside className="sticky top-[66px] z-20 hidden h-[calc(100svh-66px)] border-r border-[#d8e0ea] bg-white py-4 md:block">
           <nav className="flex flex-col items-center gap-3" aria-label="Primary">

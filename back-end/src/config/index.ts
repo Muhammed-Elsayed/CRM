@@ -56,6 +56,9 @@ const envSchema = z
     CORS_ORIGIN: origin.optional(),
     DATABASE_URL: z.string().url(),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long'),
+    AUTH_ACCESS_TOKEN_SECONDS: z.coerce.number().int().min(1).max(3600).default(900),
+    AUTH_SESSION_SECONDS: z.coerce.number().int().min(1).max(2592000).default(604800),
+    AUTH_ALLOW_INSECURE_HTTP: z.enum(['true', 'false']).default('false'),
     TRUST_PROXY: trustProxyFromEnv.optional(),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   })
@@ -66,6 +69,10 @@ const envSchema = z
         message: 'CORS_ORIGINS is required',
         path: ['CORS_ORIGINS'],
       })
+    }
+
+    if (env.CORS_ORIGINS?.includes('*') || env.CORS_ORIGIN === '*') {
+      context.addIssue({ code: 'custom', message: 'Credentialed CORS requires explicit origins', path: ['CORS_ORIGINS'] })
     }
 
     if (env.NODE_ENV === 'production' && /replace|change|development/i.test(env.JWT_SECRET)) {
@@ -89,6 +96,9 @@ const config = {
   allowAllCorsOrigins,
   databaseUrl: parsedEnv.DATABASE_URL,
   jwtSecret: parsedEnv.JWT_SECRET,
+  accessTokenSeconds: parsedEnv.AUTH_ACCESS_TOKEN_SECONDS,
+  sessionSeconds: parsedEnv.AUTH_SESSION_SECONDS,
+  secureAuthCookie: parsedEnv.AUTH_ALLOW_INSECURE_HTTP !== 'true',
   trustProxy: parsedEnv.TRUST_PROXY ?? (parsedEnv.NODE_ENV === 'production' ? 1 : false),
   logLevel: parsedEnv.LOG_LEVEL,
 }

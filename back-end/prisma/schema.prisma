@@ -36,6 +36,8 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
 
+  sessions     AuthSession[]
+
   @@map("users")
 }
 
@@ -126,4 +128,30 @@ model Lead {
   @@index([stageId])
   @@index([priority])
   @@map("leads")
+}
+
+model AuthSession {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  tokens    RefreshToken[]
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  sessionId  String
+  session    AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId])
+  @@map("refresh_tokens")
 }
